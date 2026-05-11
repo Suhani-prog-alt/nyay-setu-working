@@ -94,6 +94,8 @@ async def legal_reasoning_pipeline(query: str, language: str):
         logger.info(f"[Layer 1] Decomposing: {query[:60]}...")
         yield sse_event("avatar_update", {"message": "Aapka sawaal samajh raha hoon, thoda wait karein..."})
 
+        kanoon_task = asyncio.create_task(build_kanoon_context(query, max_results=3))
+
         sub_questions = await decompose_query(query)
         logger.info(f"[Layer 1] Got {len(sub_questions)} sub-questions")
         yield sse_event("sub_questions", {"questions": sub_questions})
@@ -102,6 +104,12 @@ async def legal_reasoning_pipeline(query: str, language: str):
         routed = route_questions(sub_questions)
         logger.info(f"[Layer 2] Routing: {[(r['question'][:30], r['model']) for r in routed]}")
 
+        try:
+            kanoon_context, _ = await kanoon_task
+        except Exception as e:
+            logger.error("[Layer 2] Indian Kanoon fetch failed: %s", e)
+            kanoon_context = ""
+
         # ── Layer 5a: Interim Avatar Messages (to stream while research runs) ──
         interim_messages = get_interim_messages(query, count=3)
 
@@ -109,7 +117,7 @@ async def legal_reasoning_pipeline(query: str, language: str):
         yield sse_event("research_start", {"total": len(routed)})
 
         # Launch research as a background Task so we can yield interims concurrently
-        research_task = asyncio.create_task(run_parallel_research(routed))
+        research_task = asyncio.create_task(run_parallel_research(routed, kanoon_context=kanoon_context))
 
         # Yield interim avatar messages every 2.5s while research task completes
         for msg in interim_messages:
@@ -200,7 +208,12 @@ async def analyze_sync(body: LegalQuery):
 
     sub_questions = await decompose_query(body.query)
     routed = route_questions(sub_questions)
-    results = await run_parallel_research(routed)
+    try:
+        kanoon_context, _ = await build_kanoon_context(body.query, max_results=3)
+    except Exception as e:
+        logger.error("[Sync] Indian Kanoon fetch failed: %s", e)
+        kanoon_context = ""
+    results = await run_parallel_research(routed, kanoon_context=kanoon_context)
     synthesized = await synthesize_answers(body.query, results)
     hinglish = await convert_to_hinglish(synthesized)
 

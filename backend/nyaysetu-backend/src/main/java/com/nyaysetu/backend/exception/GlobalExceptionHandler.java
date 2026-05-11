@@ -2,11 +2,20 @@ package com.nyaysetu.backend.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import java.time.Instant;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoHandlerFound(NoHandlerFoundException e) {
+        ErrorResponse error = new ErrorResponse("Not Found", "The requested resource does not exist", 404);
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException e) {
@@ -30,11 +39,14 @@ public class GlobalExceptionHandler {
         private String error;
         private String message;
         private int status;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
+        private Instant timestamp;
 
         public ErrorResponse(String error, String message, int status) {
             this.error = error;
             this.message = message;
             this.status = status;
+            this.timestamp = Instant.now();
         }
 
         public String getError() {
@@ -47,6 +59,10 @@ public class GlobalExceptionHandler {
 
         public int getStatus() {
             return status;
+        }
+
+        public Instant getTimestamp() {
+            return timestamp;
         }
     }
 }

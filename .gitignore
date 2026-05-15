@@ -59,6 +59,14 @@ __pycache__/
 **/**/secrets.*
 **/*-key.*
 
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
 # Database
 *.db
 *.sqlite

@@ -47,7 +47,7 @@ jobs:
       - name: Run Frontend Tests
         run: |
           cd frontend/nyaysetu-frontend
-          npm run build
+          npm run test -- --run
 
 
   nlp-tests:

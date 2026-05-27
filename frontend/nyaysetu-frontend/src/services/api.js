@@ -1,6 +1,7 @@
 import axios from 'axios';
+import toast from "react-hot-toast";
+import { getErrorMessage } from "../utils/errorHandler";
 import useAuthStore from '../store/authStore';
-
 // Use explicit backend URL - Vite proxy can be unreliable
 // In development: http://localhost:8080
 // In production: Replace with actual backend URL via environment variable
@@ -53,10 +54,19 @@ api.interceptors.request.use((config) => {
 
     return config;
 });
-
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        const message = getErrorMessage(error);
+
+        // Show user-friendly toast notification
+        toast.error(message);
+
+        // Log detailed errors in development only
+        if (import.meta.env.DEV) {
+            console.error("API Error:", error);
+        }
+
         const status = error.response?.status;
         if (status === 401 || status === 403) {
             const token = localStorage.getItem('token');
@@ -85,7 +95,6 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
-
 // Auth API
 export const authAPI = {
     login: (credentials) => api.post('/api/v1/auth/login', credentials),

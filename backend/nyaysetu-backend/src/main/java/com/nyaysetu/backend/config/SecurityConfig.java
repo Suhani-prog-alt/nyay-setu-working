@@ -159,7 +159,7 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.deny())
                         .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("frame-ancestors 'none';"))
+                                .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://cdn.jsdelivr.net https://nyaysetubackend.onrender.com; frame-ancestors 'none';"))
                 )
                 .authorizeHttpRequests(auth -> auth
 
